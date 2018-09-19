@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans>
+    <bean id="user1" class="com.curefun.vspmanagercaseedit.ioc0.UserEntity">
+        <property name="userId" value="0001"></property>
+        <property name="userName" value="张三"></property>
+    </bean>
+    <bean id="user2" class="com.curefun.vspmanagercaseedit.ioc0.UserEntity">
+        <property name="userId" value="0002"></property>
+        <property name="userName" value="李四"></property>
+    </bean>
+
+</beans>
