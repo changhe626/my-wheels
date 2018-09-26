@@ -1,0 +1,149 @@
+/**
+ * Copyright (c) 2011-2019, James Zhan 詹波 (jfinal@126.com).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.curefun.jdbc.dialect;
+
+import org.curefun.jdbc.Record;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map.Entry;
+
+/**
+ * OracleDialect.
+ */
+public class OracleDialect extends Dialect {
+	static final String ORACLE_SQL = "select * from (select row_.*,rownum rownum_ from ({0}) row_ where rownum <= {1}) where rownum_>{2}"; // oracle
+
+	public OracleDialect() {
+
+	}
+
+	public String forTableBuilderDoBuild(String tableName) {
+		return "select * from " + tableName + " where rownum < 1";
+	}
+
+	public String forDbFindById(String tableName, String[] pKeys) {
+		tableName = tableName.trim();
+		trimPrimaryKeys(pKeys);
+
+		StringBuilder sql = new StringBuilder("select * from ").append(tableName).append(" where ");
+		for (int i = 0; i < pKeys.length; i++) {
+			if (i > 0) {
+				sql.append(" and ");
+			}
+			sql.append(pKeys[i]).append(" = ?");
+		}
+		return sql.toString();
+	}
+
+	public String forDbDeleteById(String tableName, String[] pKeys) {
+		tableName = tableName.trim();
+		trimPrimaryKeys(pKeys);
+
+		StringBuilder sql = new StringBuilder("delete from ").append(tableName).append(" where ");
+		for (int i = 0; i < pKeys.length; i++) {
+			if (i > 0) {
+				sql.append(" and ");
+			}
+			sql.append(pKeys[i]).append(" = ?");
+		}
+		return sql.toString();
+	}
+
+	public void forDbSave(String tableName, String[] pKeys, Record record, StringBuilder sql, List<Object> paras) {
+		tableName = tableName.trim();
+		trimPrimaryKeys(pKeys);
+
+		sql.append("insert into ");
+		sql.append(tableName).append('(');
+		StringBuilder temp = new StringBuilder();
+		temp.append(") values(");
+
+		int count = 0;
+		for (Entry<String, Object> e : record.getColumns().entrySet()) {
+			String colName = e.getKey();
+			if (count++ > 0) {
+				sql.append(", ");
+				temp.append(", ");
+			}
+			sql.append(colName);
+
+			Object value = e.getValue();
+			if (value instanceof String && isPrimaryKey(colName, pKeys) && ((String) value).endsWith(".nextval")) {
+				temp.append(value);
+			} else {
+				temp.append('?');
+				paras.add(value);
+			}
+		}
+		sql.append(temp.toString()).append(')');
+	}
+
+	public void forDbUpdate(String tableName, String[] pKeys, Object[] ids, Record record, StringBuilder sql,
+                            List<Object> paras) {
+		tableName = tableName.trim();
+		trimPrimaryKeys(pKeys);
+
+		sql.append("update ").append(tableName).append(" set ");
+		for (Entry<String, Object> e : record.getColumns().entrySet()) {
+			String colName = e.getKey();
+			if (!isPrimaryKey(colName, pKeys)) {
+				if (paras.size() > 0) {
+					sql.append(", ");
+				}
+				sql.append(colName).append(" = ? ");
+				paras.add(e.getValue());
+			}
+		}
+		sql.append(" where ");
+		for (int i = 0; i < pKeys.length; i++) {
+			if (i > 0) {
+				sql.append(" and ");
+			}
+			sql.append(pKeys[i]).append(" = ?");
+			paras.add(ids[i]);
+		}
+	}
+
+	public String forPaginate(int pageNumber, int pageSize, String findSql) {
+		int start = (pageNumber - 1) * pageSize;
+		int end = pageNumber * pageSize;
+		StringBuilder ret = new StringBuilder();
+		ret.append("select * from ( select row_.*, rownum rownum_ from (  ");
+		ret.append(findSql);
+		ret.append(" ) row_ where rownum <= ").append(end).append(") table_alias");
+		ret.append(" where table_alias.rownum_ > ").append(start);
+		return ret.toString();
+	}
+
+	public boolean isOracle() {
+		return true;
+	}
+
+	public void fillStatement(PreparedStatement pst, List<Object> paras) throws SQLException {
+		fillStatementHandleDateType(pst, paras);
+	}
+
+	public void fillStatement(PreparedStatement pst, Object... paras) throws SQLException {
+		fillStatementHandleDateType(pst, paras);
+	}
+
+	public String getDefaultPrimaryKey() {
+		return "ID";
+	}
+}
