@@ -24,7 +24,7 @@
       <module name="my-wheels" target="1.5" />
       <module name="netty" target="1.5" />
       <module name="rpc" target="1.5" />
-      <module name="spring" target="1.5" />
+      <module name="spring" target="8" />
       <module name="tomcat" target="1.5" />
     </bytecodeTargetLevel>
   </component>

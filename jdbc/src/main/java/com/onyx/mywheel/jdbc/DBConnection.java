@@ -53,7 +53,7 @@ public class DBConnection {
      * 获取连接,默认是从第一个数据库中获取连接...
      */
     public synchronized static DruidPooledConnection getConnect(){
-        return getConnect(1);
+        return getConnect(0);
     }
 
 
@@ -65,7 +65,7 @@ public class DBConnection {
     public  synchronized static  DruidPooledConnection  getConnect(int order){
         DruidPooledConnection connection=null;
         try {
-            connection = druidDataSources.get(order).getConnection();
+            connection = druidDataSources.get(order-1).getConnection();
         } catch (SQLException e) {
             e.printStackTrace();
             logger.error("获取数据库链接失败了:");
