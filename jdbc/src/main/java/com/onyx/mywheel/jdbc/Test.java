@@ -31,6 +31,17 @@ public class Test {
         for (Map<String, Object> map : query2) {
             System.out.println(map);
         }
+
+
+        /*TransactionalManager manager = new TransactionalManager(db2);
+
+        List<String> collect1 = Stream.of("开场白11", "20180830090000001").collect(Collectors.toList());
+        int record = db2.updateRecord("UPDATE  basic_option_info  set option_name=?  where  option_id=? ", collect1);
+        System.out.println(record);*/
+
+        int i=1/0;
+
+
     }
 
 

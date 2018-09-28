@@ -95,6 +95,34 @@ public class OperateDB {
     }
 
 
+    /**
+     * 执行更新
+     * @param sql
+     * @param params
+     * @return
+     */
+    public <T>int updateRecord(String sql,List<T> params) throws SQLException {
+        QueryRunner runner = new QueryRunner();
+        int num = getQuestionNum(sql);
+        Object[] objects = list2Array(params, num);
+        int update = runner.update(connection, sql, objects);
+        return update;
+    }
+
+
+    /**
+     * 插入记录
+     * @param sql
+     * @param params
+     * @return
+     */
+    public <T>Object[] insert(String sql,List<T> params) throws SQLException {
+        QueryRunner runner = new QueryRunner();
+        int num = getQuestionNum(sql);
+        Object[] objects = list2Array(params, num);
+        Object[] insert = runner.insert(connection, sql, new ArrayHandler(), objects);
+        return insert;
+    }
 
 
 
@@ -188,7 +216,9 @@ public class OperateDB {
     }
 
 
-
+    public Connection getConnection(){
+        return connection;
+    }
 
 
 }
