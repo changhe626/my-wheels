@@ -1,5 +1,7 @@
-package com.onyx.spring.ioc2;
+package com.onyx.spring.ioc3;
 
+import com.onyx.spring.ioc2.Autowired;
+import com.onyx.spring.ioc2.Bean;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -15,6 +17,8 @@ import java.util.Map;
  */
 public class ProjectScanner {
 
+
+
     private String path;
 
     public ProjectScanner(String path) {
@@ -29,10 +33,14 @@ public class ProjectScanner {
     /**
      * 保存所有的生成的class,单例
      */
-    public Map<String, Object> beans = new HashMap<>();
+    private Map<String, Object> beans = new HashMap<>();
+
+    public Map<String, Object> getBeans(){
+        return beans;
+    }
 
 
-    public void init() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    public void init(){
         //先把包名转换为路径,首先得到项目的classpath
         String classpath = ProjectScanner.class.getResource("/").getPath();
         //然后把我们的包名basPach转换为路径名
@@ -44,11 +52,23 @@ public class ProjectScanner {
         for (String s : classPaths) {
             //把 D:\work\code\20170401\search-class\target\classes\com\baibin\search\a\A.class 这样的绝对路径转换为全类名com.baibin.search.a.A
             s = s.replace(classpath.replace("/", "\\").replaceFirst("\\\\", ""), "").replace("\\", ".").replace(".class", "");
-            Class clazz = Class.forName(s);
+            Class clazz = null;
+            try {
+                clazz = Class.forName(s);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
             Annotation annotation = clazz.getDeclaredAnnotation(Bean.class);
             if (annotation != null) {
                 if (annotation instanceof Bean) {
-                    Object o = clazz.newInstance();
+                    Object o = null;
+                    try {
+                        o = clazz.newInstance();
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
                     Bean bean = (Bean) annotation;
                     String name = bean.name();
                     if (StringUtils.isNoneBlank(name)) {
@@ -69,7 +89,7 @@ public class ProjectScanner {
     /**
      * 进行属性的注入...
      */
-    public void injectProperty() throws IllegalAccessException, InstantiationException {
+    public void injectProperty() {
         for (Object value : beans.values()) {
             Field[] fields = value.getClass().getDeclaredFields();
             for (Field field : fields) {
@@ -89,7 +109,11 @@ public class ProjectScanner {
                         throw new RuntimeException("没有找到名字是:" + beanName + "的bean");
                         //第二个地方查找
                     }
-                    field.set(value, o);
+                    try {
+                        field.set(value, o);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

@@ -27,6 +27,7 @@ public class ClassPathXmlApplicationContext  implements BeanFactory {
      * @param beanId  beanId
      * @return  封装完参数的类
      */
+    @Override
     public Object getBean(String beanId) throws Exception {
         //1、读取xml配置文件
         // 获取xml解析器
@@ -70,6 +71,7 @@ public class ClassPathXmlApplicationContext  implements BeanFactory {
     }
 
 
+    @Override
     public <T> T getBean(Class<T> requiredType) throws Exception {
         //1、读取xml配置文件
         // 获取xml解析器
