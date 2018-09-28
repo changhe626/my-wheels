@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,18 +15,24 @@ import java.util.Map;
  */
 public class ProjectScanner {
 
+    private String path;
+
+    public ProjectScanner(String path) {
+        this.path = path;
+    }
+
     /**
      * 保存所有的class文件的路径
      */
-    private static List<String> classPaths = new ArrayList<String>();
+    private List<String> classPaths = new ArrayList<String>();
 
     /**
      * 保存所有的生成的class,单例
      */
-    public static Map<String, Class> beans = new HashMap<>();
+    public Map<String, Object> beans = new HashMap<>();
 
 
-    public static void init(String path) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    public void init() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         //先把包名转换为路径,首先得到项目的classpath
         String classpath = ProjectScanner.class.getResource("/").getPath();
         //然后把我们的包名basPach转换为路径名
@@ -40,18 +47,54 @@ public class ProjectScanner {
             Class clazz = Class.forName(s);
             Annotation annotation = clazz.getDeclaredAnnotation(Bean.class);
             if (annotation != null) {
-                Bean bean = (Bean) annotation;
-                String name = bean.name();
-                if (StringUtils.isNoneBlank(name)) {
-                    beans.put(name, clazz);
-                } else {
-                    int indexOf = s.lastIndexOf(".");
-                    String substring = s.substring(indexOf+1, s.length());
-                    String s1 = toLowerFirstLetter(substring);
-                    beans.put(s1, clazz);
+                if (annotation instanceof Bean) {
+                    Object o = clazz.newInstance();
+                    Bean bean = (Bean) annotation;
+                    String name = bean.name();
+                    if (StringUtils.isNoneBlank(name)) {
+                        beans.put(name, o);
+                    } else {
+                        int indexOf = s.lastIndexOf(".");
+                        String substring = s.substring(indexOf + 1, s.length());
+                        String s1 = toLowerFirstLetter(substring);
+                        beans.put(s1, o);
+                    }
                 }
             }
         }
+        System.out.println(beans);
+    }
+
+
+    /**
+     * 进行属性的注入...
+     */
+    public void injectProperty() throws IllegalAccessException, InstantiationException {
+        for (Object value : beans.values()) {
+            Field[] fields = value.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                Autowired annotation = field.getAnnotation(Autowired.class);
+                if (annotation == null) {
+                    continue;
+                }
+                if (annotation instanceof Autowired) {
+                    Autowired autowired = annotation;
+                    String beanName = autowired.beanName();
+                    field.setAccessible(true);
+                    if (StringUtils.isBlank(beanName)) {
+                        beanName = field.getName();
+                    }
+                    Object o = beans.get(beanName);
+                    if (o == null) {
+                        throw new RuntimeException("没有找到名字是:" + beanName + "的bean");
+                        //第二个地方查找
+                    }
+                    field.set(value, o);
+                }
+            }
+        }
+        System.out.println(beans);
+
     }
 
 
@@ -60,7 +103,7 @@ public class ProjectScanner {
      *
      * @param file
      */
-    private static void doPath(File file) {
+    private void doPath(File file) {
         if (file.isDirectory()) {
             //文件夹我们就递归
             File[] files = file.listFiles();
@@ -84,7 +127,7 @@ public class ProjectScanner {
      * @param string
      * @return
      */
-    private static String toLowerFirstLetter(String string) {
+    private String toLowerFirstLetter(String string) {
         if (StringUtils.isNoneBlank(string)) {
             String lowerCase = String.valueOf(string.charAt(0)).toLowerCase();
             StringBuilder builder = new StringBuilder(lowerCase);

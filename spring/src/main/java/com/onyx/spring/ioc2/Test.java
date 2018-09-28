@@ -6,7 +6,9 @@ public class Test {
 
 
         try {
-            ProjectScanner.init("com.onyx.spring.ioc2");
+            ProjectScanner scanner = new ProjectScanner("com.onyx.spring.ioc2");
+            scanner.init();
+            scanner.injectProperty();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {

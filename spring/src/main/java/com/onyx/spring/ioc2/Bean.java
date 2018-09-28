@@ -11,6 +11,7 @@ public @interface Bean {
 
     /**
      * bean的名字
+     *
      * @return
      */
     public String name() default "";
